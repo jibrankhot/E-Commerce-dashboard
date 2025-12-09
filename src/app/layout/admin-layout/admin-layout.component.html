@@ -1,0 +1,56 @@
+<div class="layout-container" [class.sidebar-collapsed]="(isSidebarCollapsed$ | async) ?? false">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" aria-label="Admin navigation">
+        <div class="profile">
+            <img src="assets/admin-avatar.jpg" alt="Admin avatar" />
+            <h4>Admin Panel</h4>
+            <span>Administrator</span>
+        </div>
+
+        <nav class="menu" aria-label="Primary navigation">
+            <a *ngFor="let item of navItems" [routerLink]="item.route" routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }" class="menu-item">
+                <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
+                <span>{{ item.label }}</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- MOBILE BACKDROP (click outside to close sidebar) -->
+    <div class="backdrop" *ngIf="!(isSidebarCollapsed$ | async) && isMobile" (click)="toggleSidebar()"></div>
+
+    <!-- CONTENT AREA -->
+    <div class="content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <!-- Sidebar toggle button -->
+                <button type="button" mat-icon-button class="topbar-menu-toggle" (click)="toggleSidebar()"
+                    aria-label="Toggle navigation">
+                    <mat-icon>menu</mat-icon>
+                </button>
+
+                <!-- GLOBAL SEARCH -->
+                <div class="search-container">
+                    <mat-icon aria-hidden="true">search</mat-icon>
+                    <input type="search" placeholder="Search..." aria-label="Global search"
+                        (input)="onSearchChange($any($event.target).value)" />
+                </div>
+            </div>
+
+            <div class="topbar-icons">
+                <button class="icon-btn" type="button" aria-label="Notifications">
+                    <mat-icon>notifications</mat-icon>
+                </button>
+                <button class="icon-btn" type="button" aria-label="Account">
+                    <mat-icon>account_circle</mat-icon>
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN ROUTER CONTENT -->
+        <main>
+            <router-outlet></router-outlet>
+        </main>
+    </div>
+</div>

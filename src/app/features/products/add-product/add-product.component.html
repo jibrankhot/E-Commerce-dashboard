@@ -1,0 +1,132 @@
+<div class="dialog-container">
+    <div class="product-panel">
+
+        <header class="panel-header">
+            <div class="header-text">
+                <h2>Add Product</h2>
+                <p>Create a new inventory item. Update all details anytime later.</p>
+            </div>
+            <button mat-icon-button class="close-btn" (click)="dialogRef.close()">
+                <mat-icon>close</mat-icon>
+            </button>
+        </header>
+
+        <div class="progress-container">
+            <div class="progress-fill" [style.width.%]="formProgress"></div>
+        </div>
+
+        <form [formGroup]="form" class="panel-body">
+
+            <section class="block">
+                <div class="block-header">
+                    <mat-icon>info</mat-icon><span>Basic Information</span>
+                </div>
+
+                <div class="grid-two">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Name*</mat-label>
+                        <input matInput formControlName="name">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Category*</mat-label>
+                        <input matInput formControlName="category">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Subcategory</mat-label>
+                        <input matInput formControlName="subcategory">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Brand</mat-label>
+                        <input matInput formControlName="brand">
+                    </mat-form-field>
+                </div>
+            </section>
+
+            <section class="block">
+                <div class="block-header">
+                    <mat-icon>payments</mat-icon><span>Pricing & Stock</span>
+                </div>
+
+                <div class="grid-two">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Price*</mat-label>
+                        <input matInput type="number" formControlName="price">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Discount (%)</mat-label>
+                        <input matInput type="number" formControlName="discount">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Stock*</mat-label>
+                        <input matInput type="number" formControlName="stock">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>SKU (optional)</mat-label>
+                        <input matInput formControlName="sku">
+                    </mat-form-field>
+                </div>
+
+                <div class="summary">
+                    <div class="summary-box">
+                        <label>Final Price</label>
+                        <span>{{ finalPrice | currency:'INR' }}</span>
+                    </div>
+                    <div class="summary-box" [ngClass]="stockClass">
+                        <label>Stock Status</label>
+                        <span>{{ stockLabel }}</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="block">
+                <div class="block-header">
+                    <mat-icon>description</mat-icon><span>Description</span>
+                </div>
+
+                <mat-form-field appearance="outline" class="full">
+                    <mat-label>Description</mat-label>
+                    <textarea matInput rows="4" formControlName="description"></textarea>
+                </mat-form-field>
+            </section>
+
+            <section class="block media-block">
+                <div class="block-header">
+                    <mat-icon>collections</mat-icon><span>Product Images</span>
+                </div>
+
+                <div class="media-wrapper">
+                    <div class="upload-zone" (drop)="onFileDropped($event)" (dragover)="onDragOver($event)">
+                        <input type="file" multiple hidden #fileInput (change)="onFilesSelected($event)">
+                        <button type="button" class="upload-btn" (click)="fileInput.click()">Upload images or drag &
+                            drop</button>
+                        <p class="hint">Supported: JPG, PNG, WEBP</p>
+                    </div>
+
+                    <div class="gallery" *ngIf="images.length > 0">
+                        <div class="img-box" *ngFor="let img of images; let i = index">
+                            <img [src]="img" />
+                            <button mat-icon-button class="remove-img" (click)="removeImage(i)">
+                                <mat-icon>close</mat-icon>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </form>
+
+        <footer class="panel-footer">
+            <button mat-button class="cancel-btn" (click)="dialogRef.close()">Cancel</button>
+            <button mat-raised-button class="save-btn" [disabled]="form.invalid" (click)="submit()">
+                <mat-icon>check_circle</mat-icon> Save Product
+            </button>
+        </footer>
+
+    </div>
+</div>
