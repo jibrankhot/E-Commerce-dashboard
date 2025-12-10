@@ -15,6 +15,7 @@
     <mat-form-field appearance="outline" class="search-field">
         <mat-label>Search Products</mat-label>
         <input matInput (keyup)="applyFilter($event.target.value)" placeholder="Search by name or category" />
+
         <button mat-icon-button matSuffix *ngIf="dataSource?.filteredData?.length" (click)="applyFilter('')"
             aria-label="Clear">
             <mat-icon>close</mat-icon>
@@ -68,13 +69,17 @@
             <th mat-header-cell *matHeaderCellDef>Status</th>
             <td mat-cell *matCellDef="let p">
                 <span class="badge" [ngClass]="{
-                    'badge-in': getStockStatus(p.stock) === 'in',
-                    'badge-low': getStockStatus(p.stock) === 'low',
-                    'badge-out': getStockStatus(p.stock) === 'out'
-                }">
-                    {{ getStockStatus(p.stock) === 'in' ? 'In Stock' :
-                    getStockStatus(p.stock) === 'low' ? 'Low Stock' :
-                    'Out of Stock' }}
+                        'badge-in': getStockStatus(p.stock) === 'in',
+                        'badge-low': getStockStatus(p.stock) === 'low',
+                        'badge-out': getStockStatus(p.stock) === 'out'
+                    }">
+                    {{
+                    getStockStatus(p.stock) === 'in'
+                    ? 'In Stock'
+                    : getStockStatus(p.stock) === 'low'
+                    ? 'Low Stock'
+                    : 'Out of Stock'
+                    }}
                 </span>
             </td>
         </ng-container>
@@ -83,16 +88,21 @@
         <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef>Actions</th>
             <td mat-cell *matCellDef="let p" class="actions">
-                <button mat-icon-button matTooltip="Edit Product" (click)="edit(p)">
+
+                <!-- EDIT BUTTON -->
+                <button mat-icon-button color="primary" matTooltip="Edit Product" (click)="edit(p)">
                     <mat-icon>edit</mat-icon>
                 </button>
+
+                <!-- DELETE BUTTON -->
                 <button mat-icon-button color="warn" matTooltip="Delete Product" (click)="delete(p)">
                     <mat-icon>delete</mat-icon>
                 </button>
+
             </td>
         </ng-container>
 
-        <!-- Rows -->
+        <!-- Table Rows -->
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
     </table>

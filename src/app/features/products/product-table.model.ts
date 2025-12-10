@@ -1,4 +1,5 @@
 export interface ProductTableModel {
+    id: string | number;
     name: string;
     category: string;
     price: number;

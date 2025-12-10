@@ -18,6 +18,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
+import { Router, RouterModule } from '@angular/router';
+
 // Dialog & Service
 import { AddProductComponent } from '../add-product/add-product.component';
 import { ProductService } from '../products.service';
@@ -39,12 +41,14 @@ import { mapProductsToTable } from '../product.mapper';
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    RouterModule                // <-- REQUIRED for navigation
   ],
   templateUrl: './product-list.component.html',
   styleUrls: ['./product-list.component.scss'],
 })
 export class ProductListComponent implements OnInit {
+
   displayedColumns = ['name', 'category', 'price', 'stock', 'status', 'actions'];
   dataSource = new MatTableDataSource<any>([]);
   isLoading = false;
@@ -56,7 +60,8 @@ export class ProductListComponent implements OnInit {
   constructor(
     private productService: ProductService,
     private dialog: MatDialog,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private router: Router            // Router injected
   ) { }
 
   ngOnInit(): void {
@@ -75,12 +80,12 @@ export class ProductListComponent implements OnInit {
         if (this.paginator) this.dataSource.paginator = this.paginator;
         if (this.sort) this.dataSource.sort = this.sort;
 
-        this.cdr.detectChanges();  // forces UI update
+        this.cdr.detectChanges();
       },
       error: () => {
         this.isLoading = false;
         this.loadError = true;
-        this.cdr.detectChanges();  // forces UI update
+        this.cdr.detectChanges();
       }
     });
   }
@@ -116,8 +121,9 @@ export class ProductListComponent implements OnInit {
     });
   }
 
+  // EDIT PRODUCT
   edit(product: any): void {
-    console.log('Edit', product);
+    this.router.navigate(['/admin/products/edit', product.id]);
   }
 
   delete(product: any): void {
