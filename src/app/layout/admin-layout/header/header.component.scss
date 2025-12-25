@@ -1,0 +1,134 @@
+$blue: #2b73ff;
+$header-bg: #ffffff;
+$border-color: #e6e8ef;
+$text-muted: #6b7280;
+
+:host {
+  display: block;
+}
+
+/* =========================
+   HEADER ROOT
+========================= */
+.admin-header {
+  height: 68px;
+  background: $header-bg;
+  border-bottom: 1px solid $border-color;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 26px;
+  box-sizing: border-box;
+}
+
+/* =========================
+   LEFT SECTION
+========================= */
+.left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* SIDEBAR TOGGLE (MOBILE) */
+.menu-toggle {
+  display: none; /* shown only on mobile */
+}
+
+/* =========================
+   RIGHT SECTION
+========================= */
+.right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+/* =========================
+   ADMIN INFO
+========================= */
+.admin-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* AVATAR (TEXT-BASED) */
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: $blue;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  user-select: none;
+}
+
+/* USER DETAILS */
+.details {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+/* EMAIL */
+.email {
+  font-size: 14px;
+  font-weight: 500;
+  color: #2f2f2f;
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ROLE */
+.role {
+  font-size: 12px;
+  color: $text-muted;
+  text-transform: capitalize;
+}
+
+/* =========================
+   LOGOUT BUTTON
+========================= */
+button[mat-icon-button] {
+  background: #f1f4f8;
+  border-radius: 50%;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+button[mat-icon-button]:hover {
+  background: #e7ebf2;
+  transform: translateY(-1px);
+}
+
+button[mat-icon-button]:active {
+  transform: scale(0.92);
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 900px) {
+  .menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .details {
+    display: none; /* hide email + role on small screens */
+  }
+}
+
+/* EXTRA SMALL DEVICES */
+@media (max-width: 480px) {
+  .admin-header {
+    padding: 0 16px;
+  }
+}

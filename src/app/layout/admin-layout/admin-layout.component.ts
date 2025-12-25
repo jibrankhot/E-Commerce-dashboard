@@ -1,77 +1,69 @@
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { AsyncPipe, CommonModule, NgFor, NgIf } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  OnDestroy,
+  signal,
+} from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common';
 
-// Angular Material
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-
-// RxJS
-import { BehaviorSubject } from 'rxjs';
-
-interface AdminNavItem {
-  label: string;
-  icon: string;
-  route: string;
-}
-
-const ADMIN_NAV_ITEMS: AdminNavItem[] = [
-  { label: 'Products', icon: 'inventory_2', route: '/products' },
-  { label: 'Users', icon: 'group', route: '/users' },
-  { label: 'Orders', icon: 'receipt_long', route: '/orders' }
-];
+// Components
+import { HeaderComponent } from './header/header.component';
+import { SidebarComponent } from './sidebar/sidebar.component';
 
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
   imports: [
-    RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
     CommonModule,
-    AsyncPipe,
-    MatIconModule,
-    MatButtonModule
+    RouterOutlet,
+    HeaderComponent,
+    SidebarComponent,
   ],
   templateUrl: './admin-layout.component.html',
   styleUrls: ['./admin-layout.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AdminLayoutComponent implements OnInit {
-  // Navigation items displayed in sidebar
-  readonly navItems = ADMIN_NAV_ITEMS;
+export class AdminLayoutComponent implements OnInit, OnDestroy {
+  /** Sidebar collapsed state */
+  readonly isSidebarCollapsed = signal<boolean>(false);
 
-  // Sidebar expanded/collapsed
-  private readonly _isSidebarCollapsed = new BehaviorSubject<boolean>(false);
-  readonly isSidebarCollapsed$ = this._isSidebarCollapsed.asObservable();
+  /** Responsive */
+  private readonly mediaQuery =
+    window.matchMedia('(max-width: 900px)');
 
-  // Search term typed in topbar
-  private readonly _searchTerm = new BehaviorSubject<string>('');
-  readonly searchTerm$ = this._searchTerm.asObservable();
-
-  // To determine if device is mobile/tablet
-  isMobile = false;
+  private readonly mediaQueryListener = (
+    e: MediaQueryListEvent
+  ) => this.onMediaChange(e);
 
   ngOnInit(): void {
-    // Determine initial device width
-    this.isMobile = window.matchMedia('(max-width: 900px)').matches;
+    // Initial responsive state
+    this.isSidebarCollapsed.set(this.mediaQuery.matches);
 
-    // Update when screen size changes
-    window.matchMedia('(max-width: 900px)').addEventListener('change', (e) => {
-      this.isMobile = e.matches;
-      if (!this.isMobile) {
-        // On large screens: sidebar always open
-        this._isSidebarCollapsed.next(false);
-      }
-    });
+    // Listen for viewport changes
+    this.mediaQuery.addEventListener(
+      'change',
+      this.mediaQueryListener
+    );
   }
 
+  ngOnDestroy(): void {
+    this.mediaQuery.removeEventListener(
+      'change',
+      this.mediaQueryListener
+    );
+  }
+
+  /** Triggered by header */
   toggleSidebar(): void {
-    this._isSidebarCollapsed.next(!this._isSidebarCollapsed.value);
+    this.isSidebarCollapsed.update((v) => !v);
   }
 
-  onSearchChange(value: string): void {
-    this._searchTerm.next(value.trim());
-    // Later we can send this value to a search service or global store
+  private onMediaChange(
+    event: MediaQueryListEvent
+  ): void {
+    // Auto-collapse on mobile
+    this.isSidebarCollapsed.set(event.matches);
   }
 }

@@ -1,7 +1,8 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { tap } from 'rxjs/operators';
+import { tap, catchError } from 'rxjs/operators';
+import { throwError, of } from 'rxjs';
 
 import { StorageService } from './storage.service';
 import { environment } from '../../../environments/environment';
@@ -17,6 +18,17 @@ export interface AuthUser {
   role: string;
 }
 
+interface LoginResponse {
+  data: {
+    accessToken: string;
+    user: AuthUser;
+  };
+}
+
+interface MeResponse {
+  data: AuthUser;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -24,73 +36,101 @@ export class AuthService {
   private readonly TOKEN_KEY = 'admin_token';
   private readonly USER_KEY = 'admin_user';
 
-  // Reactive auth state (Angular 16 signal)
-  private _isAuthenticated = signal<boolean>(this.hasToken());
+  private _isAuthenticated = signal<boolean>(false);
+  private _currentUser = signal<AuthUser | null>(null);
+
+  readonly isAuthenticated$ = computed(() => this._isAuthenticated());
+  readonly currentUser$ = computed(() => this._currentUser());
 
   constructor(
     private http: HttpClient,
     private storage: StorageService,
     private router: Router
-  ) { }
+  ) {
+    const token = this.getToken();
+    const user = this.storage.get<AuthUser>(this.USER_KEY);
 
-  /**
-   * ADMIN LOGIN
-   * POST /api/auth/login
-   */
+    if (token && user) {
+      this._isAuthenticated.set(true);
+      this._currentUser.set(user);
+    }
+  }
+
   login(payload: LoginPayload) {
     return this.http
-      .post<any>(`${environment.apiUrl}/auth/login`, payload)
+      .post<LoginResponse>(`${environment.apiUrl}/auth/login`, payload)
       .pipe(
         tap((response) => {
-          const token = response?.data?.accessToken;
-          const user = response?.data?.user;
+          const token = response.data?.accessToken;
+          const user = response.data?.user;
 
-          if (!token || user?.role !== 'ADMIN') {
-            throw new Error('Unauthorized access');
+          if (!token || !user || user.role !== 'ADMIN') {
+            throw new Error('Unauthorized');
           }
 
           this.storage.set(this.TOKEN_KEY, token);
           this.storage.set(this.USER_KEY, user);
+
           this._isAuthenticated.set(true);
+          this._currentUser.set(user);
+        }),
+        catchError((error) => {
+          this.clearAuth();
+          return throwError(() => error);
         })
       );
   }
 
   /**
-   * LOGOUT
+   * 🔥 SAFE SESSION RESTORE
+   * Never clears auth on transient failure
    */
+  restoreSession() {
+    const token = this.getToken();
+
+    if (!token) {
+      return of(null);
+    }
+
+    return this.http.get<MeResponse>(`${environment.apiUrl}/auth/me`).pipe(
+      tap((response) => {
+        const user = response.data;
+
+        if (user && user.role === 'ADMIN') {
+          this.storage.set(this.USER_KEY, user);
+          this._currentUser.set(user);
+          this._isAuthenticated.set(true);
+        }
+      }),
+      catchError(() => {
+        // ❗ DO NOT clear auth here
+        // Let guard/interceptor decide later
+        return of(null);
+      })
+    );
+  }
+
   logout(): void {
-    this.storage.remove(this.TOKEN_KEY);
-    this.storage.remove(this.USER_KEY);
-    this._isAuthenticated.set(false);
+    this.clearAuth();
     this.router.navigate(['/login']);
   }
 
-  /**
-   * AUTH CHECK (used by guard)
-   */
   isAuthenticated(): boolean {
     return this._isAuthenticated();
   }
 
-  /**
-   * CURRENT ADMIN USER
-   */
   getCurrentUser(): AuthUser | null {
-    return this.storage.get<AuthUser>(this.USER_KEY);
+    return this._currentUser();
   }
 
-  /**
-   * JWT TOKEN
-   */
   getToken(): string | null {
     return this.storage.get<string>(this.TOKEN_KEY);
   }
 
-  /**
-   * INTERNAL
-   */
-  private hasToken(): boolean {
-    return !!this.storage.get(this.TOKEN_KEY);
+  private clearAuth(): void {
+    this.storage.remove(this.TOKEN_KEY);
+    this.storage.remove(this.USER_KEY);
+    this._isAuthenticated.set(false);
+    this._currentUser.set(null);
   }
 }

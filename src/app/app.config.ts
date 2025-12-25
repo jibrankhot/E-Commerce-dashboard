@@ -1,5 +1,9 @@
-import { ApplicationConfig } from '@angular/core';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { ApplicationConfig, APP_INITIALIZER } from '@angular/core';
+import {
+  provideRouter,
+  withComponentInputBinding,
+  withEnabledBlockingInitialNavigation,
+} from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import {
   provideHttpClient,
@@ -8,28 +12,35 @@ import {
 } from '@angular/common/http';
 
 import { routes } from './app.routes';
+import { AuthService } from './core/services/auth.service';
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
+
+function initAuth(authService: AuthService) {
+  return () => authService.restoreSession();
+}
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    // Router
     provideRouter(
       routes,
-      withComponentInputBinding()
+      withComponentInputBinding(),
+      withEnabledBlockingInitialNavigation() // ✅ CORRECT
     ),
 
-    // Animations
     provideAnimations(),
 
-    // HttpClient (DI-based interceptors)
-    provideHttpClient(
-      withInterceptorsFromDi()
-    ),
+    provideHttpClient(withInterceptorsFromDi()),
 
-    // 🔐 REGISTER AUTH INTERCEPTOR
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
+      multi: true,
+    },
+
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initAuth,
+      deps: [AuthService],
       multi: true,
     },
   ],

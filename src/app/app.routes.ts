@@ -6,16 +6,11 @@ export const routes: Routes = [
      * Public routes
      */
     {
-        path: '',
-        redirectTo: 'login',
-        pathMatch: 'full',
-    },
-
-    {
         path: 'login',
         loadComponent: () =>
-            import('./features/auth/login/login.component')
-                .then(m => m.LoginComponent),
+            import('./features/auth/login/login.component').then(
+                (m) => m.LoginComponent
+            ),
     },
 
     /**
@@ -23,10 +18,11 @@ export const routes: Routes = [
      */
     {
         path: 'admin',
-        canActivate: [adminAuthGuard],
+        canActivateChild: [adminAuthGuard],
         loadComponent: () =>
-            import('./layout/admin-layout/admin-layout.component')
-                .then(m => m.AdminLayoutComponent),
+            import('./layout/admin-layout/admin-layout.component').then(
+                (m) => m.AdminLayoutComponent
+            ),
 
         children: [
             {
@@ -38,52 +34,69 @@ export const routes: Routes = [
             {
                 path: 'dashboard',
                 loadComponent: () =>
-                    import('./features/dashboard/dashboard.component')
-                        .then(m => m.DashboardComponent),
+                    import('./features/dashboard/dashboard.component').then(
+                        (m) => m.DashboardComponent
+                    ),
             },
 
             {
                 path: 'products',
                 loadComponent: () =>
-                    import('./features/products/product-list/product-list.component')
-                        .then(m => m.ProductListComponent),
+                    import('./features/products/product-list/product-list.component').then(
+                        (m) => m.ProductListComponent
+                    ),
             },
 
             {
                 path: 'products/add',
                 loadComponent: () =>
-                    import('./features/products/add-product/add-product.component')
-                        .then(m => m.AddProductComponent),
+                    import('./features/products/add-product/add-product.component').then(
+                        (m) => m.AddProductComponent
+                    ),
             },
 
             {
                 path: 'products/edit/:id',
                 loadComponent: () =>
-                    import('./features/products/edit-product/edit-product.component')
-                        .then(m => m.EditProductComponent),
+                    import('./features/products/edit-product/edit-product.component').then(
+                        (m) => m.EditProductComponent
+                    ),
             },
 
             {
                 path: 'categories',
                 loadComponent: () =>
-                    import('./features/categories/category-list/category-list.component')
-                        .then(m => m.CategoryListComponent),
+                    import('./features/categories/category-list/category-list.component').then(
+                        (m) => m.CategoryListComponent
+                    ),
             },
 
             {
                 path: 'orders',
                 loadComponent: () =>
-                    import('./features/orders/order-list/order-list.component')
-                        .then(m => m.OrderListComponent),
+                    import('./features/orders/order-list/order-list.component').then(
+                        (m) => m.OrderListComponent
+                    ),
             },
 
             {
                 path: 'users',
                 loadComponent: () =>
-                    import('./features/users/user-list/user-list.component')
-                        .then(m => m.UserListComponent),
+                    import('./features/users/user-list/user-list.component').then(
+                        (m) => m.UserListComponent
+                    ),
             },
         ],
+    },
+
+    /**
+     * Default landing
+     * Decide based on auth via guard
+     */
+    {
+        path: '',
+        redirectTo: 'admin',
+        pathMatch: 'full',
     },
 
     /**
@@ -91,6 +104,6 @@ export const routes: Routes = [
      */
     {
         path: '**',
-        redirectTo: 'login',
+        redirectTo: 'admin',
     },
 ];

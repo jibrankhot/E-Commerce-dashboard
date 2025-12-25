@@ -1,1 +1,27 @@
-<p>header works!</p>
+<header class="admin-header">
+    <div class="left">
+        <!-- Mobile sidebar toggle -->
+        <button mat-icon-button class="menu-toggle" aria-label="Toggle navigation" (click)="onToggleSidebar()">
+            <mat-icon>menu</mat-icon>
+        </button>
+    </div>
+
+    <!-- Right section: admin info + logout -->
+    <div class="right" *ngIf="user() as admin">
+        <div class="admin-info">
+            <!-- Avatar fallback using first letter -->
+            <div class="avatar">
+                {{ admin.email.charAt(0).toUpperCase() }}
+            </div>
+
+            <div class="details">
+                <span class="email">{{ admin.email }}</span>
+                <span class="role">{{ admin.role }}</span>
+            </div>
+        </div>
+
+        <button mat-icon-button aria-label="Logout" (click)="logout()">
+            <mat-icon>logout</mat-icon>
+        </button>
+    </div>
+</header>

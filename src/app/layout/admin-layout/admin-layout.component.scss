@@ -1,202 +1,76 @@
 $blue: #2b73ff;
-$sidebar-bg: #ffffff;
 $page-bg: #f5f7fa;
 
 :host {
   display: block;
 }
 
-/* GLOBAL */
+/* =========================
+   ROOT LAYOUT
+========================= */
 .layout-container {
   height: 100vh;
   display: flex;
   background: $page-bg;
   font-family: 'Inter', sans-serif;
   letter-spacing: -0.2px;
+  overflow: hidden;
 }
 
-/* SIDEBAR */
-.sidebar {
-  width: 250px;
-  background: $sidebar-bg;
-  padding: 26px 22px;
-  border-right: 1px solid #e3e6ed;
-  display: flex;
-  flex-direction: column;
-  will-change: transform; /* smoother GPU animation */
+/* =========================
+   SIDEBAR WRAPPER
+   (actual sidebar UI lives in SidebarComponent)
+========================= */
+app-sidebar {
+  flex-shrink: 0;
 }
 
-/* When collapsed (for mobile) */
-.layout-container.sidebar-collapsed .sidebar {
-  transform: translateX(-100%);
-}
-
-/* PROFILE */
-.profile {
-  text-align: left;
-  margin-bottom: 28px;
-}
-.profile img {
-  width: 62px;
-  height: 62px;
-  border-radius: 50%;
-  margin-bottom: 6px;
-}
-.profile h4 {
-  font-size: 17px;
-  font-weight: 600;
-  margin: 0 0 2px 0;
-}
-.profile span {
-  font-size: 13px;
-  color: #7c7c7c;
-}
-
-/* MENU */
-.menu {
-  margin-top: 30px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.menu a,
-.menu .menu-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 20px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 500;
-  color: #2f2f2f;
-  position: relative;
-  transition: background 0.18s, transform 0.18s;
-  cursor: pointer;
-  text-decoration: none;
-}
-.menu a.active {
-  background: rgba(43, 115, 255, 0.16);
-  color: $blue;
-  font-weight: 600;
-}
-.menu a.active::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 4px;
-  border-radius: 3px;
-  background: $blue;
-  box-shadow: 0 0 10px rgba(43, 115, 255, 0.5);
-}
-.menu a:hover {
-  background: rgba(43, 115, 255, 0.11);
-  color: $blue;
-  transform: translateX(2px);
-}
-
-/* CONTENT AREA */
-.content {
+/* =========================
+   CONTENT AREA
+========================= */
+.layout-content {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0; /* flexbox safety */
   position: relative;
-  z-index: 10; /* required when backdrop is visible */
 }
 
-/* TOPBAR */
-.topbar {
-  height: 68px;
-  background: white;
-  border-bottom: 1px solid #e6e8ef;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 26px;
-  transition: box-shadow 0.25s;
+/* =========================
+   HEADER (TOPBAR)
+   HeaderComponent already styles itself
+========================= */
+app-header {
+  flex-shrink: 0;
+  z-index: 5;
 }
 
-.topbar-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.topbar-menu-toggle {
-  display: none; /* visible only in mobile */
-}
-
-/* SEARCH BAR */
-.search-container {
-  display: flex;
-  align-items: center;
-  background: #f3f6fb;
-  gap: 10px;
-  border-radius: 10px;
-  padding: 9px 14px;
-  width: 260px;
-  border: 1px solid transparent;
-  transition: 0.2s;
-}
-.search-container:hover {
-  background: #eef2f8;
-}
-.search-container:focus-within {
-  border: 1px solid $blue;
-  background: white;
-  box-shadow: 0 0 0 3px rgba(43, 115, 255, 0.16);
-}
-.search-container input {
-  border: none;
-  outline: none;
-  background: none;
-  font-size: 15px;
-  width: 100%;
-}
-.search-container mat-icon {
-  font-size: 22px;
-  color: #78808d;
-}
-
-/* TOPBAR ICONS */
-.topbar-icons {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.icon-btn {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: none;
-  background: #f1f4f8;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: 0.18s;
-  cursor: pointer;
-}
-.icon-btn:hover {
-  background: #e7ebf2;
-  transform: translateY(-1px);
-}
-.icon-btn:active {
-  transform: scale(0.92);
-}
-.icon-btn mat-icon {
-  color: #5f6570;
-  font-size: 22px;
-}
-
-/* MAIN CONTENT */
-main {
-  padding: 24px 34px 34px 34px;
+/* =========================
+   PAGE CONTAINER
+========================= */
+.page-container {
+  flex: 1;
+  padding: 24px 34px 34px;
   overflow-y: auto;
   animation: fadeIn 0.25s ease-out;
+  min-height: 0; /* flexbox safety */
+  -webkit-overflow-scrolling: touch;
 }
 
-/* PAGE TRANSITION */
+/* =========================
+   CARD FEEL (OPTIONAL BUT RECOMMENDED)
+========================= */
+.page-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 26px;
+  min-height: calc(100vh - 170px);
+  box-shadow: 0 6px 20px rgba(16, 24, 40, 0.04);
+}
+
+/* =========================
+   PAGE TRANSITION
+========================= */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -208,33 +82,36 @@ main {
   }
 }
 
-/* RESPONSIVE — MOBILE / TABLET */
+/* =========================
+   RESPONSIVE — MOBILE / TABLET
+========================= */
 @media (max-width: 900px) {
-  .sidebar {
+  .layout-container {
+    position: relative;
+  }
+
+  app-sidebar {
     position: fixed;
     top: 0;
     bottom: 0;
     left: 0;
     z-index: 20;
-    transform: translateX(-100%);
-    transition: transform 0.25s ease;
   }
 
-  .layout-container:not(.sidebar-collapsed) .sidebar {
-    transform: translateX(0);
+  .layout-content {
+    width: 100%;
+  }
+}
+
+/* =========================
+   EXTRA SMALL DEVICES
+========================= */
+@media (max-width: 600px) {
+  .page-container {
+    padding: 16px;
   }
 
-  .topbar-menu-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    z-index: 15;
+  .page-card {
+    padding: 18px;
   }
 }
