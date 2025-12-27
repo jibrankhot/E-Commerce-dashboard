@@ -5,22 +5,44 @@
 
   .panel-header {
     margin-bottom: 20px;
-    h2 { margin: 0 0 4px; }
-    p { margin: 0; color: #666; }
+
+    h2 {
+      margin: 0 0 4px;
+    }
+
+    p {
+      margin: 0;
+      color: #666;
+    }
   }
 
   .form-row {
     display: flex;
     gap: 16px;
+    flex-wrap: wrap;
 
-    .f1 { flex: 1; }
-    .sm { width: 160px; }
+    .f1 {
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .sm {
+      width: 160px;
+      min-width: 160px;
+    }
   }
 
-  .full { width: 100%; }
+  .full {
+    width: 100%;
+  }
 
   .image-section {
     margin-top: 16px;
+
+    h3 {
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
 
     .drop-area {
       border: 2px dashed #ccc;
@@ -28,6 +50,12 @@
       text-align: center;
       border-radius: 6px;
       margin-bottom: 16px;
+      transition: border-color 0.2s ease, background 0.2s ease;
+
+      &:hover {
+        border-color: #6c47ff;
+        background: rgba(108, 71, 255, 0.04);
+      }
 
       .upload-btn input {
         display: none;
@@ -43,9 +71,10 @@
         width: 120px;
         height: 120px;
         border: 1px solid #eee;
-        border-radius: 4px;
+        border-radius: 6px;
         overflow: hidden;
         position: relative;
+        background: #fafafa;
 
         img {
           width: 100%;
@@ -57,7 +86,7 @@
           position: absolute;
           top: 4px;
           right: 4px;
-          background: rgba(255,255,255,0.7);
+          background: rgba(255, 255, 255, 0.7);
         }
       }
     }

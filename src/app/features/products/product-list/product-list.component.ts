@@ -6,7 +6,6 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-// Material UI
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
@@ -20,11 +19,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { Router, RouterModule } from '@angular/router';
 
-// Dialog & Service
 import { AddProductComponent } from '../add-product/add-product.component';
 import { ProductService } from '../products.service';
 
-// Mapper
 import { mapProductsToTable } from '../product.mapper';
 
 @Component({
@@ -42,7 +39,7 @@ import { mapProductsToTable } from '../product.mapper';
     MatFormFieldModule,
     MatInputModule,
     MatProgressSpinnerModule,
-    RouterModule                // <-- REQUIRED for navigation
+    RouterModule
   ],
   templateUrl: './product-list.component.html',
   styleUrls: ['./product-list.component.scss'],
@@ -61,7 +58,7 @@ export class ProductListComponent implements OnInit {
     private productService: ProductService,
     private dialog: MatDialog,
     private cdr: ChangeDetectorRef,
-    private router: Router            // Router injected
+    private router: Router
   ) { }
 
   ngOnInit(): void {
@@ -73,12 +70,17 @@ export class ProductListComponent implements OnInit {
     this.loadError = false;
 
     this.productService.getProducts().subscribe({
-      next: (res) => {
-        this.dataSource.data = mapProductsToTable(res);
+      next: (products) => {
+        this.dataSource.data = mapProductsToTable(products);
         this.isLoading = false;
 
-        if (this.paginator) this.dataSource.paginator = this.paginator;
-        if (this.sort) this.dataSource.sort = this.sort;
+        if (this.paginator) {
+          this.dataSource.paginator = this.paginator;
+        }
+
+        if (this.sort) {
+          this.dataSource.sort = this.sort;
+        }
 
         this.cdr.detectChanges();
       },
@@ -97,8 +99,8 @@ export class ProductListComponent implements OnInit {
     }
   }
 
-  getStockStatus(stock: number): 'out' | 'low' | 'in' {
-    if (stock === 0) return 'out';
+  getStockStatus(stock: number | null): 'out' | 'low' | 'in' {
+    if (!stock || stock === 0) return 'out';
     if (stock <= 5) return 'low';
     return 'in';
   }
@@ -114,19 +116,18 @@ export class ProductListComponent implements OnInit {
       panelClass: 'add-product-dialog'
     });
 
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(result => {
       if (result === 'saved') {
         this.loadProducts();
       }
     });
   }
 
-  // EDIT PRODUCT
-  edit(product: any): void {
+  edit(product: { id: string }): void {
     this.router.navigate(['/admin/products/edit', product.id]);
   }
 
-  delete(product: any): void {
+  delete(product: { id: string }): void {
     console.log('Delete', product);
   }
 }

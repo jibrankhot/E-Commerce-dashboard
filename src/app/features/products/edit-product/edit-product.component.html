@@ -7,63 +7,35 @@
 
     <form [formGroup]="form" (ngSubmit)="submit()">
 
-        <!-- BASIC INFO -->
         <div class="form-row">
             <mat-form-field appearance="outline" class="f1">
                 <mat-label>Product Name</mat-label>
-                <input matInput formControlName="name" />
+                <input matInput formControlName="name">
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="sm">
                 <mat-label>Price</mat-label>
-                <input matInput type="number" formControlName="price" />
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="sm">
-                <mat-label>Discount %</mat-label>
-                <input matInput type="number" formControlName="discount" />
-            </mat-form-field>
-        </div>
-
-        <!-- CATEGORY INFO -->
-        <div class="form-row">
-            <mat-form-field appearance="outline" class="f1">
-                <mat-label>Category</mat-label>
-                <input matInput formControlName="category" />
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="f1">
-                <mat-label>Subcategory</mat-label>
-                <input matInput formControlName="subcategory" />
+                <input matInput type="number" formControlName="price">
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="sm">
                 <mat-label>Stock</mat-label>
-                <input matInput type="number" formControlName="stock" />
+                <input matInput type="number" formControlName="stock">
             </mat-form-field>
         </div>
 
-        <mat-form-field appearance="outline" class="full">
-            <mat-label>Brand</mat-label>
-            <input matInput formControlName="brand" />
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="full">
-            <mat-label>SKU</mat-label>
-            <input matInput formControlName="sku" />
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="full">
-            <mat-label>Thumbnail Path</mat-label>
-            <input matInput formControlName="thumbnail" />
-        </mat-form-field>
+        <div class="form-row">
+            <mat-form-field appearance="outline" class="f1">
+                <mat-label>Category ID</mat-label>
+                <input matInput formControlName="category_id">
+            </mat-form-field>
+        </div>
 
         <mat-form-field appearance="outline" class="full">
             <mat-label>Description</mat-label>
             <textarea matInput rows="4" formControlName="description"></textarea>
         </mat-form-field>
 
-        <!-- IMAGE UPLOAD -->
         <section class="image-section">
             <h3>Images</h3>
 
@@ -72,26 +44,26 @@
 
                 <label class="upload-btn">
                     <input type="file" multiple accept="image/*" (change)="onFilesSelected($event)">
-                    <button mat-stroked-button type="button">Select Files</button>
+                    <button mat-stroked-button type="button">
+                        Select Files
+                    </button>
                 </label>
             </div>
 
-            <!-- PREVIEW IMAGES -->
             <div class="image-list">
                 <ng-container *ngFor="let img of previewImages; let i = index">
                     <div class="img-card">
-                        <img [src]="img" />
-                        <button mat-icon-button (click)="removeImage(i)">
+                        <img [src]="img">
+                        <button mat-icon-button type="button" (click)="removeImage(i)">
                             <mat-icon>delete</mat-icon>
                         </button>
                     </div>
                 </ng-container>
 
-                <!-- EXISTING IMAGE PATHS -->
                 <ng-container *ngFor="let img of images; let i = index">
                     <div class="img-card">
-                        <img [src]="img" />
-                        <button mat-icon-button (click)="removeImage(i)">
+                        <img [src]="img">
+                        <button mat-icon-button type="button" (click)="removeImage(i)">
                             <mat-icon>delete</mat-icon>
                         </button>
                     </div>
@@ -104,8 +76,7 @@
                 Save Changes
             </button>
 
-            <button mat-button type="button" (click)="router.navigate(['/admin/products'])
-">
+            <button mat-button type="button" (click)="router.navigate(['/admin/products'])">
                 Cancel
             </button>
         </div>

@@ -1,13 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators, FormControl } from '@angular/forms';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { ActivatedRoute, Router } from '@angular/router';
+
 import { ProductService } from '../products.service';
+import { UpdateProductPayload, Product } from '../product.model';
 
 @Component({
     selector: 'app-edit-product',
@@ -26,30 +28,20 @@ import { ProductService } from '../products.service';
 })
 export class EditProductComponent implements OnInit {
 
-    fallbackEnabled = true;
-    fallbackImagePath = 'assets/images/admin-avatar.jpg';
+    private fallbackEnabled = true;
+    private fallbackImagePath = 'assets/images/admin-avatar.jpg';
 
-    // FORM
     form = this.fb.group({
-        name: ['', Validators.required],
-        price: [null, [Validators.required, Validators.min(0)]],
-        category: ['', Validators.required],
-        subcategory: [''],
-        brand: [''],
-        stock: [0, [Validators.required, Validators.min(0)]],
-        discount: [0, [Validators.min(0), Validators.max(100)]],
-        sku: [''],
-        thumbnail: [''],
-        description: [''],
-        featured: [false]
+        name: new FormControl<string>('', { nonNullable: true, validators: [Validators.required] }),
+        price: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
+        stock: new FormControl<number | null>(0, [Validators.min(0)]),
+        category_id: new FormControl<string | null>(null),
+        description: new FormControl<string | null>(null)
     });
 
-    // UI states
-    productId: number | string = '';
+    productId = '';
     images: string[] = [];
     previewImages: string[] = [];
-
-    finalPrice = 0;
     stockLabel = '—';
     stockClass = '';
     loading = false;
@@ -62,20 +54,14 @@ export class EditProductComponent implements OnInit {
         private router: Router
     ) { }
 
-    // -----------------------------
-    // INIT — LOAD PRODUCT (FIXED)
-    // -----------------------------
     ngOnInit(): void {
-
-        // FIXED: using paramMap.subscribe to ensure route loads correctly
         this.route.paramMap.subscribe(params => {
             this.productId = params.get('id') ?? '';
-
             if (!this.productId) return;
 
             this.loading = true;
             this.productService.getProduct(this.productId).subscribe({
-                next: (product: any) => {
+                next: product => {
                     this.loading = false;
                     this.patchProduct(product);
                 },
@@ -86,14 +72,8 @@ export class EditProductComponent implements OnInit {
             });
         });
 
-        // Update stock + final price
         this.form.valueChanges.subscribe(v => {
-            const price = Number(v.price || 0);
-            const discount = Number(v.discount || 0);
-
-            this.finalPrice = price - (price * (discount / 100));
-
-            const stock = Number(v.stock || 0);
+            const stock = Number(v.stock ?? 0);
             if (stock === 0) {
                 this.stockLabel = 'Out of Stock';
                 this.stockClass = 'out';
@@ -107,66 +87,53 @@ export class EditProductComponent implements OnInit {
         });
     }
 
-    private patchProduct(product: any) {
+    private patchProduct(product: Product): void {
         this.form.patchValue({
-            name: product.title,
+            name: product.name,
             price: product.price,
-            category: product.category,
-            subcategory: product.subcategory,
-            brand: product.brand,
-            stock: product.quantity,
-            discount: product.discount,
-            sku: product.sku,
-            thumbnail: product.thumbnail,
-            description: product.description,
-            featured: product.featured
+            stock: product.stock,
+            category_id: product.category_id,
+            description: product.description
         });
 
-        this.images = product.images?.map((i: any) => i.img) ?? [];
+        this.images = product.images ?? [];
     }
 
-    onDragOver(e: DragEvent) {
-        e.preventDefault();
+    onDragOver(event: DragEvent): void {
+        event.preventDefault();
     }
 
-    onFileDropped(e: DragEvent) {
-        e.preventDefault();
-        if (!e.dataTransfer?.files) return;
-        this.processFiles(e.dataTransfer.files);
+    onFileDropped(event: DragEvent): void {
+        event.preventDefault();
+        if (!event.dataTransfer?.files) return;
+        this.processFiles(event.dataTransfer.files);
     }
 
-    onFilesSelected(e: any) {
-        this.processFiles(e.target.files);
+    onFilesSelected(event: any): void {
+        this.processFiles(event.target.files);
     }
 
-    private processFiles(files: FileList) {
+    private processFiles(files: FileList): void {
         Array.from(files).forEach(file => {
             const reader = new FileReader();
-            reader.onload = (ev: any) => {
-                this.resize(ev.target.result, 300, 300, (compressed: string) => {
-
+            reader.onload = e => {
+                this.resize(e.target?.result as string, 300, 300, compressed => {
                     this.previewImages.push(compressed);
-
                     this.uploadImage(compressed).subscribe({
-                        next: (res: any) => {
-                            if (res?.path) {
-                                this.images.push(res.path);
-                            } else {
-                                this.images.push(this.fallbackImagePath);
-                            }
+                        next: res => {
+                            this.images.push(res?.url || this.fallbackImagePath);
                         },
                         error: () => {
                             this.images.push(this.fallbackImagePath);
                         }
                     });
-
                 });
             };
             reader.readAsDataURL(file);
         });
     }
 
-    private resize(src: string, maxW: number, maxH: number, cb: (r: string) => void) {
+    private resize(src: string, maxW: number, maxH: number, cb: (r: string) => void): void {
         const img = new Image();
         img.onload = () => {
             const canvas = document.createElement('canvas');
@@ -180,54 +147,44 @@ export class EditProductComponent implements OnInit {
         img.src = src;
     }
 
-    removeImage(i: number) {
-        this.images.splice(i, 1);
-        this.previewImages.splice(i, 1);
+    removeImage(index: number): void {
+        this.images.splice(index, 1);
+        this.previewImages.splice(index, 1);
     }
 
-    uploadImage(base64: string) {
+    uploadImage(base64: string): any {
         if (this.fallbackEnabled) {
-            return {
-                subscribe: (handler: any) => handler.error('Fallback active')
-            };
+            return { subscribe: (h: any) => h.error('fallback') };
         }
         return this.productService.uploadImage({ image: base64 });
     }
 
-    submit() {
+    submit(): void {
         if (this.form.invalid) return;
 
-        const raw = this.form.value;
-        const updated = {
-            title: raw.name,
-            slug: this.slugify(raw.name || ''),
-            price: Number(raw.price),
-            discount: Number(raw.discount),
-            quantity: Number(raw.stock),
-            category: raw.category,
-            subcategory: raw.subcategory,
-            brand: raw.brand,
-            sku: raw.sku,
-            thumbnail: raw.thumbnail || this.fallbackImagePath,
-            description: raw.description,
-            featured: raw.featured,
-            images: this.images.map((path, i) => ({
-                label: `Image ${i + 1}`,
-                img: path
-            }))
+        const v = this.form.value;
+
+        const payload: UpdateProductPayload = {
+            name: v.name,
+            price: v.price!,
+            stock: v.stock,
+            status:
+                !v.stock || v.stock === 0
+                    ? 'INACTIVE'
+                    : 'ACTIVE',
+            images: this.images.length ? this.images : [this.fallbackImagePath],
+            category_id: v.category_id,
+            description: v.description
         };
 
-        this.productService.updateProduct(this.productId, updated).subscribe({
+        this.productService.updateProduct(this.productId, payload).subscribe({
             next: () => {
                 this.snack.open('Product updated', 'Close', { duration: 1500 });
                 this.router.navigate(['/admin/products']);
             },
-            error: () =>
-                this.snack.open('Failed to update', 'Close', { duration: 1500 })
+            error: () => {
+                this.snack.open('Failed to update', 'Close', { duration: 1500 });
+            }
         });
-    }
-
-    private slugify(v: string) {
-        return v.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     }
 }

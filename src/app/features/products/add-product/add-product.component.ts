@@ -2,7 +2,6 @@ import { Component, OnInit, DoCheck } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
-// Angular Material
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -11,6 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 
 import { ProductService } from '../products.service';
+import { CreateProductPayload } from '../product.model';
 
 @Component({
   selector: 'app-add-product',
@@ -18,8 +18,6 @@ import { ProductService } from '../products.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-
-    // Material
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
@@ -32,32 +30,20 @@ import { ProductService } from '../products.service';
 })
 export class AddProductComponent implements OnInit, DoCheck {
 
-  // -----------------------------
-  // BACKEND + FALLBACK SETTINGS
-  // -----------------------------
-  private fallbackEnabled = true;  // JSON SERVER MODE
+  private fallbackEnabled = true;
   private fallbackImagePath = 'assets/images/admin-avatar.jpg';
 
-  // FORM
   form = this.fb.group({
     name: ['', Validators.required],
     price: [null, [Validators.required, Validators.min(0)]],
-    category: ['', Validators.required],
-    subcategory: [''],
-    brand: [''],
-    stock: [0, [Validators.required, Validators.min(0)]],
-    discount: [0, [Validators.min(0), Validators.max(100)]],
-    sku: [''],
-    thumbnail: [''],
-    description: [''],
-    featured: [false]
+    stock: [0, [Validators.min(0)]],
+    category_id: [null],
+    description: ['']
   });
 
-  // UI states
   formProgress = 0;
-  images: string[] = [];  // NOW STORES PATHS ONLY
-  previewImages: string[] = []; // UI PREVIEW (BASE64)
-  finalPrice = 0;
+  images: string[] = [];
+  previewImages: string[] = [];
   stockLabel = '—';
   stockClass = '';
 
@@ -70,11 +56,8 @@ export class AddProductComponent implements OnInit, DoCheck {
 
   ngOnInit(): void {
     this.form.valueChanges.subscribe(v => {
-      const price = Number(v.price || 0);
-      const discount = Number(v.discount || 0);
-      this.finalPrice = price - (price * (discount / 100));
+      const stock = Number(v.stock ?? 0);
 
-      const stock = Number(v.stock || 0);
       if (stock === 0) {
         this.stockLabel = 'Out of Stock';
         this.stockClass = 'out';
@@ -90,24 +73,21 @@ export class AddProductComponent implements OnInit, DoCheck {
 
   ngDoCheck(): void {
     const total = Object.keys(this.form.controls).length;
-    const filled = Object.values(this.form.controls).filter(c => c.value && c.valid).length;
+    const filled = Object.values(this.form.controls).filter(c => c.valid && c.value !== null && c.value !== '').length;
     this.formProgress = Math.round((filled / total) * 100);
   }
 
-  // -----------------------------
-  // IMAGE HANDLING (COMPRESSION + UPLOAD)
-  // -----------------------------
-  onDragOver(event: DragEvent) {
+  onDragOver(event: DragEvent): void {
     event.preventDefault();
   }
 
-  onFileDropped(event: DragEvent) {
+  onFileDropped(event: DragEvent): void {
     event.preventDefault();
     if (!event.dataTransfer?.files) return;
     this.handleFiles(event.dataTransfer.files);
   }
 
-  onFilesSelected(event: any) {
+  onFilesSelected(event: any): void {
     this.handleFiles(event.target.files);
   }
 
@@ -115,26 +95,18 @@ export class AddProductComponent implements OnInit, DoCheck {
     Array.from(files).forEach(file => {
       const reader = new FileReader();
 
-      reader.onload = (e: any) => {
-        this.resizeImage(e.target.result, 300, 300, (compressedBase64: string) => {
+      reader.onload = e => {
+        this.resizeImage(e.target?.result as string, 300, 300, compressed => {
+          this.previewImages.push(compressed);
 
-          // Store BASE64 for preview ONLY
-          this.previewImages.push(compressedBase64);
-
-          // Try backend upload 
-          this.uploadImage(compressedBase64).subscribe({
-            next: (res: any) => {
-              if (res?.path) {
-                this.images.push(res.path); // REAL BACKEND PATH
-              } else {
-                this.images.push(this.fallbackImagePath); // FAILSAFE
-              }
+          this.uploadImage(compressed).subscribe({
+            next: res => {
+              this.images.push(res?.url || this.fallbackImagePath);
             },
             error: () => {
-              this.images.push(this.fallbackImagePath); // JSON SERVER MODE
+              this.images.push(this.fallbackImagePath);
             }
           });
-
         });
       };
 
@@ -142,126 +114,58 @@ export class AddProductComponent implements OnInit, DoCheck {
     });
   }
 
-  private resizeImage(src: string, maxWidth: number, maxHeight: number, callback: (result: string) => void) {
+  private resizeImage(src: string, maxWidth: number, maxHeight: number, callback: (result: string) => void): void {
     const img = new Image();
     img.onload = () => {
-      const canvas = document.createElement("canvas");
-
+      const canvas = document.createElement('canvas');
       const scale = Math.min(maxWidth / img.width, maxHeight / img.height);
+
       canvas.width = img.width * scale;
       canvas.height = img.height * scale;
 
-      const ctx = canvas.getContext("2d")!;
+      const ctx = canvas.getContext('2d')!;
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      const compressed = canvas.toDataURL("image/jpeg", 0.6);
-      callback(compressed);
+      callback(canvas.toDataURL('image/jpeg', 0.6));
     };
     img.src = src;
   }
 
-  removeImage(index: number) {
+  removeImage(index: number): void {
     this.images.splice(index, 1);
     this.previewImages.splice(index, 1);
   }
 
-  // -----------------------------
-  // TEMP: BACKEND UPLOAD OR FALLBACK
-  // -----------------------------
-  uploadImage(base64: string) {
+  uploadImage(base64: string): any {
     if (this.fallbackEnabled) {
       return {
-        subscribe: (handlers: any) => {
-          handlers.error('JSON Server cannot upload'); // TRIGGER FALLBACK
-        }
+        subscribe: (h: any) => h.error('fallback')
       };
     }
-
     return this.productService.uploadImage({ image: base64 });
   }
-
-  // -----------------------------
-  // SUBMIT PRODUCT
-  // -----------------------------
 
   submit(): void {
     if (this.form.invalid) return;
 
-    const raw = this.form.value;
-    const name = raw.name ?? '';
-    const brand = raw.brand ?? '';
-    const price = Number(raw.price ?? 0);
-    const stock = Number(raw.stock ?? 0);
-    const discount = Number(raw.discount ?? 0);
+    const v = this.form.value;
 
-    const sku = raw.sku?.trim()?.length
-      ? raw.sku.trim()
-      : this.generateSku(name, brand);
-
-    const thumbnail = raw.thumbnail?.trim()?.length
-      ? raw.thumbnail.trim()
-      : this.fallbackImagePath;
-
-    const status =
-      stock === 0 ? 'out-stock' :
-        stock <= 5 ? 'low-stock' :
-          'in-stock';
-
-    const newProduct: any = {
-      id: Date.now(),
-      sku,
-      title: name,
-      slug: this.slugify(name),
-      category: raw.category,
-      subcategory: raw.subcategory || null,
-      brand: raw.brand || null,
-      price,
-      discount,
-      quantity: stock,
-      status,
-      thumbnail,
-
-      // FINAL: ALWAYS STORE PATHS
-      images: this.images.length
-        ? this.images.map((path, i) => ({ label: `Image ${i + 1}`, img: path }))
-        : [{ label: 'Main', img: thumbnail }],
-
-      description: raw.description || '',
-      additionalInformation: [],
-      featured: !!raw.featured,
-      tags: [],
-      rating: 0,
-      reviews: 0,
-      sellCount: 0,
-
-      name,
-      stock
+    const payload: CreateProductPayload = {
+      name: v.name!,
+      price: Number(v.price),
+      stock: v.stock === null ? null : Number(v.stock),
+      status:
+        !v.stock || v.stock === 0
+          ? 'INACTIVE'
+          : 'ACTIVE',
+      images: this.images.length ? this.images : [this.fallbackImagePath],
+      category_id: v.category_id,
+      description: v.description || null
     };
 
-    this.productService.addProduct(newProduct).subscribe(() => {
+    this.productService.addProduct(payload).subscribe(() => {
       this.snack.open('Product added successfully', 'Close', { duration: 2000 });
       this.dialogRef.close('saved');
     });
-  }
-
-  // -----------------------------
-  // UTILITIES
-  // -----------------------------
-  private slugify(value: string): string {
-    return value
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)+/g, '');
-  }
-
-  private generateSku(name: string, brand: string | null): string {
-    const base = (brand ? brand + ' ' + name : name)
-      .toUpperCase()
-      .replace(/[^A-Z0-9]+/g, '-')
-      .replace(/(^-|-$)+/g, '');
-
-    const randomPart = Math.floor(1000 + Math.random() * 9000);
-    return `${base}-${randomPart}`;
   }
 }

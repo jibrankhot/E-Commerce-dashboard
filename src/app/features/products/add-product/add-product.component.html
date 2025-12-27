@@ -19,7 +19,8 @@
 
             <section class="block">
                 <div class="block-header">
-                    <mat-icon>info</mat-icon><span>Basic Information</span>
+                    <mat-icon>info</mat-icon>
+                    <span>Basic Information</span>
                 </div>
 
                 <div class="grid-two">
@@ -29,25 +30,16 @@
                     </mat-form-field>
 
                     <mat-form-field appearance="outline">
-                        <mat-label>Category*</mat-label>
-                        <input matInput formControlName="category">
-                    </mat-form-field>
-
-                    <mat-form-field appearance="outline">
-                        <mat-label>Subcategory</mat-label>
-                        <input matInput formControlName="subcategory">
-                    </mat-form-field>
-
-                    <mat-form-field appearance="outline">
-                        <mat-label>Brand</mat-label>
-                        <input matInput formControlName="brand">
+                        <mat-label>Category ID</mat-label>
+                        <input matInput formControlName="category_id">
                     </mat-form-field>
                 </div>
             </section>
 
             <section class="block">
                 <div class="block-header">
-                    <mat-icon>payments</mat-icon><span>Pricing & Stock</span>
+                    <mat-icon>payments</mat-icon>
+                    <span>Pricing & Stock</span>
                 </div>
 
                 <div class="grid-two">
@@ -57,26 +49,12 @@
                     </mat-form-field>
 
                     <mat-form-field appearance="outline">
-                        <mat-label>Discount (%)</mat-label>
-                        <input matInput type="number" formControlName="discount">
-                    </mat-form-field>
-
-                    <mat-form-field appearance="outline">
-                        <mat-label>Stock*</mat-label>
+                        <mat-label>Stock</mat-label>
                         <input matInput type="number" formControlName="stock">
-                    </mat-form-field>
-
-                    <mat-form-field appearance="outline">
-                        <mat-label>SKU (optional)</mat-label>
-                        <input matInput formControlName="sku">
                     </mat-form-field>
                 </div>
 
                 <div class="summary">
-                    <div class="summary-box">
-                        <label>Final Price</label>
-                        <span>{{ finalPrice | currency:'INR' }}</span>
-                    </div>
                     <div class="summary-box" [ngClass]="stockClass">
                         <label>Stock Status</label>
                         <span>{{ stockLabel }}</span>
@@ -86,7 +64,8 @@
 
             <section class="block">
                 <div class="block-header">
-                    <mat-icon>description</mat-icon><span>Description</span>
+                    <mat-icon>description</mat-icon>
+                    <span>Description</span>
                 </div>
 
                 <mat-form-field appearance="outline" class="full">
@@ -97,20 +76,22 @@
 
             <section class="block media-block">
                 <div class="block-header">
-                    <mat-icon>collections</mat-icon><span>Product Images</span>
+                    <mat-icon>collections</mat-icon>
+                    <span>Product Images</span>
                 </div>
 
                 <div class="media-wrapper">
                     <div class="upload-zone" (drop)="onFileDropped($event)" (dragover)="onDragOver($event)">
                         <input type="file" multiple hidden #fileInput (change)="onFilesSelected($event)">
-                        <button type="button" class="upload-btn" (click)="fileInput.click()">Upload images or drag &
-                            drop</button>
+                        <button type="button" class="upload-btn" (click)="fileInput.click()">
+                            Upload images or drag & drop
+                        </button>
                         <p class="hint">Supported: JPG, PNG, WEBP</p>
                     </div>
 
-                    <div class="gallery" *ngIf="images.length > 0">
-                        <div class="img-box" *ngFor="let img of images; let i = index">
-                            <img [src]="img" />
+                    <div class="gallery" *ngIf="previewImages.length > 0">
+                        <div class="img-box" *ngFor="let img of previewImages; let i = index">
+                            <img [src]="img">
                             <button mat-icon-button class="remove-img" (click)="removeImage(i)">
                                 <mat-icon>close</mat-icon>
                             </button>
@@ -124,7 +105,8 @@
         <footer class="panel-footer">
             <button mat-button class="cancel-btn" (click)="dialogRef.close()">Cancel</button>
             <button mat-raised-button class="save-btn" [disabled]="form.invalid" (click)="submit()">
-                <mat-icon>check_circle</mat-icon> Save Product
+                <mat-icon>check_circle</mat-icon>
+                Save Product
             </button>
         </footer>
 
