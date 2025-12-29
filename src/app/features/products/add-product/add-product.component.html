@@ -6,7 +6,7 @@
                 <h2>Add Product</h2>
                 <p>Create a new inventory item. Update all details anytime later.</p>
             </div>
-            <button mat-icon-button class="close-btn" (click)="dialogRef.close()">
+            <button mat-icon-button type="button" (click)="dialogRef.close()">
                 <mat-icon>close</mat-icon>
             </button>
         </header>
@@ -15,8 +15,9 @@
             <div class="progress-fill" [style.width.%]="formProgress"></div>
         </div>
 
-        <form [formGroup]="form" class="panel-body">
+        <form [formGroup]="form" class="panel-body" (ngSubmit)="submit()">
 
+            <!-- BASIC INFO -->
             <section class="block">
                 <div class="block-header">
                     <mat-icon>info</mat-icon>
@@ -25,17 +26,25 @@
 
                 <div class="grid-two">
                     <mat-form-field appearance="outline">
-                        <mat-label>Name*</mat-label>
-                        <input matInput formControlName="name">
+                        <mat-label>Name *</mat-label>
+                        <input matInput formControlName="name" />
                     </mat-form-field>
 
+                    <!-- ✅ CATEGORY DROPDOWN (FIXED) -->
                     <mat-form-field appearance="outline">
-                        <mat-label>Category ID</mat-label>
-                        <input matInput formControlName="category_id">
+                        <mat-label>Category *</mat-label>
+                        <mat-select formControlName="categoryId">
+                            <mat-option value="" disabled>Select category</mat-option>
+
+                            <mat-option *ngFor="let category of categories" [value]="category.id">
+                                {{ category.name }}
+                            </mat-option>
+                        </mat-select>
                     </mat-form-field>
                 </div>
             </section>
 
+            <!-- PRICING & STOCK -->
             <section class="block">
                 <div class="block-header">
                     <mat-icon>payments</mat-icon>
@@ -44,13 +53,13 @@
 
                 <div class="grid-two">
                     <mat-form-field appearance="outline">
-                        <mat-label>Price*</mat-label>
-                        <input matInput type="number" formControlName="price">
+                        <mat-label>Price *</mat-label>
+                        <input matInput type="number" formControlName="price" />
                     </mat-form-field>
 
                     <mat-form-field appearance="outline">
-                        <mat-label>Stock</mat-label>
-                        <input matInput type="number" formControlName="stock">
+                        <mat-label>Stock *</mat-label>
+                        <input matInput type="number" formControlName="stock" />
                     </mat-form-field>
                 </div>
 
@@ -62,6 +71,7 @@
                 </div>
             </section>
 
+            <!-- DESCRIPTION -->
             <section class="block">
                 <div class="block-header">
                     <mat-icon>description</mat-icon>
@@ -74,25 +84,29 @@
                 </mat-form-field>
             </section>
 
+            <!-- IMAGES -->
             <section class="block media-block">
                 <div class="block-header">
                     <mat-icon>collections</mat-icon>
-                    <span>Product Images</span>
+                    <span>Product Images *</span>
                 </div>
 
                 <div class="media-wrapper">
                     <div class="upload-zone" (drop)="onFileDropped($event)" (dragover)="onDragOver($event)">
-                        <input type="file" multiple hidden #fileInput (change)="onFilesSelected($event)">
+                        <input type="file" multiple accept="image/*" hidden #fileInput
+                            (change)="onFilesSelected($event)" />
+
                         <button type="button" class="upload-btn" (click)="fileInput.click()">
                             Upload images or drag & drop
                         </button>
-                        <p class="hint">Supported: JPG, PNG, WEBP</p>
+
+                        <p class="hint">At least one image is required</p>
                     </div>
 
-                    <div class="gallery" *ngIf="previewImages.length > 0">
+                    <div class="gallery" *ngIf="previewImages.length">
                         <div class="img-box" *ngFor="let img of previewImages; let i = index">
-                            <img [src]="img">
-                            <button mat-icon-button class="remove-img" (click)="removeImage(i)">
+                            <img [src]="img" />
+                            <button mat-icon-button type="button" (click)="removeImage(i)">
                                 <mat-icon>close</mat-icon>
                             </button>
                         </div>
@@ -100,15 +114,17 @@
                 </div>
             </section>
 
-        </form>
+            <!-- FOOTER -->
+            <footer class="panel-footer">
+                <button mat-button type="button" (click)="dialogRef.close()">
+                    Cancel
+                </button>
+                <button mat-raised-button color="primary" type="submit">
+                    Save Product
+                </button>
+            </footer>
 
-        <footer class="panel-footer">
-            <button mat-button class="cancel-btn" (click)="dialogRef.close()">Cancel</button>
-            <button mat-raised-button class="save-btn" [disabled]="form.invalid" (click)="submit()">
-                <mat-icon>check_circle</mat-icon>
-                Save Product
-            </button>
-        </footer>
+        </form>
 
     </div>
 </div>

@@ -156,7 +156,7 @@ export class EditProductComponent implements OnInit {
         if (this.fallbackEnabled) {
             return { subscribe: (h: any) => h.error('fallback') };
         }
-        return this.productService.uploadImage({ image: base64 });
+        // return this.productService.uploadImage({ image: base64 });
     }
 
     submit(): void {

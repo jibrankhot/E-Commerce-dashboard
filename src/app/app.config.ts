@@ -24,11 +24,12 @@ export const appConfig: ApplicationConfig = {
     provideRouter(
       routes,
       withComponentInputBinding(),
-      withEnabledBlockingInitialNavigation() // ✅ CORRECT
+      withEnabledBlockingInitialNavigation()
     ),
 
     provideAnimations(),
 
+    // 🔑 REQUIRED so Angular can discover DI-based interceptors
     provideHttpClient(withInterceptorsFromDi()),
 
     {

@@ -1,5 +1,9 @@
 import { Component, OnInit, DoCheck } from '@angular/core';
-import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
+import {
+  FormBuilder,
+  Validators,
+  ReactiveFormsModule
+} from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
@@ -8,9 +12,15 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select'; // ✅ FIX
 
 import { ProductService } from '../products.service';
-import { CreateProductPayload } from '../product.model';
+import { HttpClient } from '@angular/common/http';
+
+interface Category {
+  id: string;
+  name: string;
+}
 
 @Component({
   selector: 'app-add-product',
@@ -23,41 +33,46 @@ import { CreateProductPayload } from '../product.model';
     MatInputModule,
     MatIconModule,
     MatButtonModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatSelectModule // ✅ FIX
   ],
   templateUrl: './add-product.component.html',
   styleUrls: ['./add-product.component.scss']
 })
 export class AddProductComponent implements OnInit, DoCheck {
 
-  private fallbackEnabled = true;
-  private fallbackImagePath = 'assets/images/admin-avatar.jpg';
-
   form = this.fb.group({
     name: ['', Validators.required],
-    price: [null, [Validators.required, Validators.min(0)]],
-    stock: [0, [Validators.min(0)]],
-    category_id: [null],
+    price: [0, [Validators.required, Validators.min(0)]],
+    stock: [0, [Validators.required, Validators.min(0)]],
+    categoryId: ['', Validators.required],
     description: ['']
   });
 
+  categories: Category[] = [];
+
   formProgress = 0;
-  images: string[] = [];
+
+  files: File[] = [];
   previewImages: string[] = [];
+
   stockLabel = '—';
   stockClass = '';
 
+  private readonly categoriesUrl = 'http://localhost:5000/api/categories';
+
   constructor(
     private fb: FormBuilder,
+    private http: HttpClient,
     private productService: ProductService,
     private snack: MatSnackBar,
     public dialogRef: MatDialogRef<AddProductComponent>
   ) { }
 
   ngOnInit(): void {
-    this.form.valueChanges.subscribe(v => {
-      const stock = Number(v.stock ?? 0);
+    this.loadCategories();
 
+    this.form.get('stock')!.valueChanges.subscribe(stock => {
       if (stock === 0) {
         this.stockLabel = 'Out of Stock';
         this.stockClass = 'out';
@@ -71,9 +86,25 @@ export class AddProductComponent implements OnInit, DoCheck {
     });
   }
 
+  private loadCategories(): void {
+    this.http
+      .get<{ success: boolean; data: Category[] }>(this.categoriesUrl)
+      .subscribe({
+        next: res => {
+          this.categories = res.data;
+        },
+        error: () => {
+          this.snack.open('Failed to load categories', 'Close', { duration: 3000 });
+        }
+      });
+  }
+
   ngDoCheck(): void {
     const total = Object.keys(this.form.controls).length;
-    const filled = Object.values(this.form.controls).filter(c => c.valid && c.value !== null && c.value !== '').length;
+    const filled = Object.values(this.form.controls).filter(
+      c => c.valid && c.value !== ''
+    ).length;
+
     this.formProgress = Math.round((filled / total) * 100);
   }
 
@@ -87,85 +118,71 @@ export class AddProductComponent implements OnInit, DoCheck {
     this.handleFiles(event.dataTransfer.files);
   }
 
-  onFilesSelected(event: any): void {
-    this.handleFiles(event.target.files);
+  onFilesSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files) return;
+    this.handleFiles(input.files);
   }
 
-  private handleFiles(files: FileList): void {
-    Array.from(files).forEach(file => {
+  private handleFiles(fileList: FileList): void {
+    Array.from(fileList).forEach(file => {
+      this.files.push(file);
+
       const reader = new FileReader();
-
-      reader.onload = e => {
-        this.resizeImage(e.target?.result as string, 300, 300, compressed => {
-          this.previewImages.push(compressed);
-
-          this.uploadImage(compressed).subscribe({
-            next: res => {
-              this.images.push(res?.url || this.fallbackImagePath);
-            },
-            error: () => {
-              this.images.push(this.fallbackImagePath);
-            }
-          });
-        });
+      reader.onload = () => {
+        this.previewImages.push(reader.result as string);
       };
-
       reader.readAsDataURL(file);
     });
   }
 
-  private resizeImage(src: string, maxWidth: number, maxHeight: number, callback: (result: string) => void): void {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const scale = Math.min(maxWidth / img.width, maxHeight / img.height);
-
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      callback(canvas.toDataURL('image/jpeg', 0.6));
-    };
-    img.src = src;
-  }
-
   removeImage(index: number): void {
-    this.images.splice(index, 1);
+    this.files.splice(index, 1);
     this.previewImages.splice(index, 1);
   }
 
-  uploadImage(base64: string): any {
-    if (this.fallbackEnabled) {
-      return {
-        subscribe: (h: any) => h.error('fallback')
-      };
-    }
-    return this.productService.uploadImage({ image: base64 });
-  }
-
   submit(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.snack.open('All required fields are mandatory', 'Close', { duration: 2500 });
+      return;
+    }
 
-    const v = this.form.value;
+    if (this.files.length === 0) {
+      this.snack.open('At least one product image is required', 'Close', { duration: 2500 });
+      return;
+    }
 
-    const payload: CreateProductPayload = {
-      name: v.name!,
-      price: Number(v.price),
-      stock: v.stock === null ? null : Number(v.stock),
-      status:
-        !v.stock || v.stock === 0
-          ? 'INACTIVE'
-          : 'ACTIVE',
-      images: this.images.length ? this.images : [this.fallbackImagePath],
-      category_id: v.category_id,
-      description: v.description || null
-    };
+    const { name, price, stock, categoryId, description } = this.form.value;
 
-    this.productService.addProduct(payload).subscribe(() => {
-      this.snack.open('Product added successfully', 'Close', { duration: 2000 });
-      this.dialogRef.close('saved');
+    const formData = new FormData();
+
+    this.files.forEach(file => {
+      formData.append('images', file);
+    });
+
+    formData.append('name', name!.trim());
+    formData.append('price', String(price));
+    formData.append('stock', String(stock));
+    formData.append('status', stock! > 0 ? 'ACTIVE' : 'INACTIVE');
+    formData.append('categoryId', categoryId!);
+
+    if (description && description.trim()) {
+      formData.append('description', description.trim());
+    }
+
+    this.productService.addProduct(formData).subscribe({
+      next: () => {
+        this.snack.open('Product added successfully', 'Close', { duration: 2000 });
+        this.dialogRef.close('saved');
+      },
+      error: err => {
+        console.error('ADD PRODUCT ERROR', err?.error?.message || err);
+        this.snack.open(
+          err?.error?.message || 'Failed to add product',
+          'Close',
+          { duration: 4000 }
+        );
+      }
     });
   }
 }
