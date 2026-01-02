@@ -1,15 +1,29 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators, FormControl } from '@angular/forms';
+import {
+    FormBuilder,
+    ReactiveFormsModule,
+    Validators,
+    FormControl
+} from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { finalize } from 'rxjs/operators';
+
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { ActivatedRoute, Router } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 
 import { ProductService } from '../products.service';
-import { UpdateProductPayload, Product } from '../product.model';
+import { Product } from '../product.model';
+
+interface UiImage {
+    id: string;
+    type: 'existing' | 'new';
+    url: string;
+    file?: File;
+}
 
 @Component({
     selector: 'app-edit-product',
@@ -20,170 +34,127 @@ import { UpdateProductPayload, Product } from '../product.model';
         MatSnackBarModule,
         MatFormFieldModule,
         MatInputModule,
-        MatIconModule,
-        MatButtonModule
+        MatButtonModule,
+        MatIconModule
     ],
     templateUrl: './edit-product.component.html',
     styleUrls: ['./edit-product.component.scss']
 })
 export class EditProductComponent implements OnInit {
 
-    private fallbackEnabled = true;
-    private fallbackImagePath = 'assets/images/admin-avatar.jpg';
+    productId!: string;
+    loading = true;
+
+    images: UiImage[] = [];
 
     form = this.fb.group({
         name: new FormControl<string>('', { nonNullable: true, validators: [Validators.required] }),
-        price: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
-        stock: new FormControl<number | null>(0, [Validators.min(0)]),
+        price: new FormControl<number | null>(null, { validators: [Validators.required, Validators.min(0)] }),
+        stock: new FormControl<number | null>(null),
         category_id: new FormControl<string | null>(null),
         description: new FormControl<string | null>(null)
     });
-
-    productId = '';
-    images: string[] = [];
-    previewImages: string[] = [];
-    stockLabel = '—';
-    stockClass = '';
-    loading = false;
 
     constructor(
         private fb: FormBuilder,
         private productService: ProductService,
         private snack: MatSnackBar,
         private route: ActivatedRoute,
-        private router: Router
+        public router: Router,
+        private cdr: ChangeDetectorRef
     ) { }
 
     ngOnInit(): void {
-        this.route.paramMap.subscribe(params => {
-            this.productId = params.get('id') ?? '';
-            if (!this.productId) return;
+        this.productId = this.route.snapshot.paramMap.get('id')!;
 
-            this.loading = true;
-            this.productService.getProduct(this.productId).subscribe({
-                next: product => {
-                    this.loading = false;
-                    this.patchProduct(product);
+        this.productService.getProductById(this.productId)
+            .pipe(finalize(() => {
+                this.loading = false;
+                this.cdr.markForCheck();
+            }))
+            .subscribe({
+                next: (product: Product) => {
+                    this.form.patchValue({
+                        name: product.name,
+                        price: product.price,
+                        stock: product.stock,
+                        category_id: product.category_id,
+                        description: product.description
+                    });
+
+                    this.images = (product.images ?? []).map(url => ({
+                        id: crypto.randomUUID(),
+                        type: 'existing',
+                        url
+                    }));
                 },
                 error: () => {
-                    this.loading = false;
-                    this.snack.open('Failed to load product', 'Close', { duration: 2000 });
+                    this.snack.open('Failed to load product', 'Close', { duration: 3000 });
+                    this.router.navigate(['/admin/products']);
                 }
             });
-        });
-
-        this.form.valueChanges.subscribe(v => {
-            const stock = Number(v.stock ?? 0);
-            if (stock === 0) {
-                this.stockLabel = 'Out of Stock';
-                this.stockClass = 'out';
-            } else if (stock <= 5) {
-                this.stockLabel = 'Low Stock';
-                this.stockClass = 'low';
-            } else {
-                this.stockLabel = 'In Stock';
-                this.stockClass = 'in';
-            }
-        });
     }
 
-    private patchProduct(product: Product): void {
-        this.form.patchValue({
-            name: product.name,
-            price: product.price,
-            stock: product.stock,
-            category_id: product.category_id,
-            description: product.description
-        });
+    onImageSelect(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        if (!input.files) return;
 
-        this.images = product.images ?? [];
-    }
-
-    onDragOver(event: DragEvent): void {
-        event.preventDefault();
-    }
-
-    onFileDropped(event: DragEvent): void {
-        event.preventDefault();
-        if (!event.dataTransfer?.files) return;
-        this.processFiles(event.dataTransfer.files);
-    }
-
-    onFilesSelected(event: any): void {
-        this.processFiles(event.target.files);
-    }
-
-    private processFiles(files: FileList): void {
-        Array.from(files).forEach(file => {
+        Array.from(input.files).forEach(file => {
             const reader = new FileReader();
-            reader.onload = e => {
-                this.resize(e.target?.result as string, 300, 300, compressed => {
-                    this.previewImages.push(compressed);
-                    this.uploadImage(compressed).subscribe({
-                        next: res => {
-                            this.images.push(res?.url || this.fallbackImagePath);
-                        },
-                        error: () => {
-                            this.images.push(this.fallbackImagePath);
-                        }
-                    });
+            reader.onload = () => {
+                this.images.push({
+                    id: crypto.randomUUID(),
+                    type: 'new',
+                    url: reader.result as string,
+                    file
                 });
+                this.cdr.markForCheck();
             };
             reader.readAsDataURL(file);
         });
+
+        input.value = '';
     }
 
-    private resize(src: string, maxW: number, maxH: number, cb: (r: string) => void): void {
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const scale = Math.min(maxW / img.width, maxH / img.height);
-            canvas.width = img.width * scale;
-            canvas.height = img.height * scale;
-            const ctx = canvas.getContext('2d')!;
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            cb(canvas.toDataURL('image/jpeg', 0.6));
-        };
-        img.src = src;
-    }
-
-    removeImage(index: number): void {
-        this.images.splice(index, 1);
-        this.previewImages.splice(index, 1);
-    }
-
-    uploadImage(base64: string): any {
-        if (this.fallbackEnabled) {
-            return { subscribe: (h: any) => h.error('fallback') };
-        }
-        // return this.productService.uploadImage({ image: base64 });
+    removeImage(image: UiImage): void {
+        this.images = this.images.filter(i => i.id !== image.id);
     }
 
     submit(): void {
         if (this.form.invalid) return;
 
-        const v = this.form.value;
+        const existingImages = this.images
+            .filter(i => i.type === 'existing')
+            .map(i => i.url);
 
-        const payload: UpdateProductPayload = {
-            name: v.name,
-            price: v.price!,
-            stock: v.stock,
-            status:
-                !v.stock || v.stock === 0
-                    ? 'INACTIVE'
-                    : 'ACTIVE',
-            images: this.images.length ? this.images : [this.fallbackImagePath],
-            category_id: v.category_id,
-            description: v.description
-        };
+        const newImages = this.images.filter(i => i.type === 'new');
 
-        this.productService.updateProduct(this.productId, payload).subscribe({
+        // 🔥 ALWAYS use FormData (simpler + consistent)
+        const formData = new FormData();
+
+        Object.entries(this.form.value).forEach(([key, value]) => {
+            if (value !== null && value !== undefined) {
+                formData.append(key, value as any);
+            }
+        });
+
+        // ✅ EXISTING images → BODY (JSON)
+        formData.append('imagesJson', JSON.stringify(existingImages));
+
+        // ✅ NEW images → FILES
+        newImages.forEach(img => {
+            if (img.file) {
+                formData.append('images', img.file);
+            }
+        });
+
+        this.productService.updateProductFormData(this.productId, formData).subscribe({
             next: () => {
-                this.snack.open('Product updated', 'Close', { duration: 1500 });
+                this.snack.open('Product updated successfully', 'Close', { duration: 2000 });
                 this.router.navigate(['/admin/products']);
             },
             error: () => {
-                this.snack.open('Failed to update', 'Close', { duration: 1500 });
+                this.snack.open('Failed to update product', 'Close', { duration: 3000 });
             }
         });
     }

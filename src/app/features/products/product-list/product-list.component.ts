@@ -16,13 +16,11 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-
 import { Router, RouterModule } from '@angular/router';
-
 import { AddProductComponent } from '../add-product/add-product.component';
 import { ProductService } from '../products.service';
-
 import { mapProductsToTable } from '../product.mapper';
+import { ConfirmationDialogComponent } from 'src/app/shared/components/confirmation-dialog/confirmation-dialog.component';
 
 @Component({
   selector: 'app-product-list',
@@ -127,7 +125,41 @@ export class ProductListComponent implements OnInit {
     this.router.navigate(['/admin/products/edit', product.id]);
   }
 
-  delete(product: { id: string }): void {
-    console.log('Delete', product);
+  /**
+   * DELETE PRODUCT (CONFIRMATION DIALOG + OPTIMISTIC UI)
+   */
+  delete(product: { id: string; name?: string }): void {
+    const dialogRef = this.dialog.open<
+      ConfirmationDialogComponent,
+      any,
+      boolean
+    >(ConfirmationDialogComponent, {
+      width: '420px',
+      disableClose: true,
+      data: {
+        title: 'Delete Product',
+        message: `Are you sure you want to delete "${product.name ?? 'this product'}"?`,
+        confirmText: 'Delete',
+        cancelText: 'Cancel'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+
+      // Optimistic UI update
+      const previousData = [...this.dataSource.data];
+      this.dataSource.data = previousData.filter(p => p.id !== product.id);
+      this.cdr.detectChanges();
+
+      this.productService.deleteProduct(product.id).subscribe({
+        error: () => {
+          // Rollback on failure
+          this.dataSource.data = previousData;
+          this.cdr.detectChanges();
+          alert('Failed to delete product. Please try again.');
+        }
+      });
+    });
   }
 }
